@@ -40,8 +40,8 @@ class MLP(object):
         Implement initialization of the network.
         """
 
-        self.linear1 = LinearModule(n_inputs, n_hidden)
-        self.linear2 = LinearModule(n_hidden, n_classes)
+        self.linear1 = LinearModule(n_inputs, n_hidden[0])
+        self.linear2 = LinearModule(n_hidden[0], n_classes)
         self.relu_fn = RELUModule()
         self.soft_max = SoftMaxModule()
 
@@ -58,10 +58,10 @@ class MLP(object):
         TODO:
         Implement forward pass of the network.
         """
-        out = self.linear1(x)
-        out = self.relu_fn(out)
-        out = self.linear2(out)
-        out = self.soft(out)
+        out = self.linear1.forward(x)
+        out = self.relu_fn.forward(out)
+        out = self.linear2.forward(out)
+        out = self.soft.forward(out)
         return out
 
     def backward(self, dout):

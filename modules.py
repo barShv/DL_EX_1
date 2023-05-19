@@ -41,13 +41,14 @@ class LinearModule(object):
             std = np.sqrt(2 / in_features)  # Kaiming initialization standard deviation (this is good for ReLu activation)
             #self.weight = np.random.randn(in_features,out_features) * std
             ####### (I am not sure if we should also make sure that the means are zero at first.. ). This would be how it's done:
-            self.weight = np.random.normal(loc=0.0, scale=std, size=(in_features, out_features))
-
+            self.weight = np.random.normal(loc=0.0, scale=std, size=(out_features, in_features))
+            # self.weight is (128,3072)
+            print(self.weight.shape)
 
         self.bias = np.zeros(out_features) #this is 1XN
         self.grads = {'weight': np.zeros_like(self.weight), #Initialize two gradients, one for Weights and one for Biases (gradients are same dimensions)
               'bias': np.zeros_like(self.bias)}
-
+        print(self.bias.shape)
 
     def forward(self, x):
         """
@@ -64,6 +65,9 @@ class LinearModule(object):
         Hint: You can store intermediate variables inside the object. They can be used in backward pass computation.
         """
         # The basic linear transformation Y = XW(T) + B
+        print(type(x))
+        print(x.shape)
+        x = x.view(x.size(0), -1)  # reshape x from [128, 3, 32, 32] to [128, 3072]
         out = np.dot(x, self.weight.T) + self.bias
 
         # Store intermediate variables for backward pass, X is the input of the previous layer
@@ -171,36 +175,29 @@ class SoftMaxModule(object):
 
         Hint: You can store intermediate variables inside the object. They can be used in backward pass computation.
         """
-        #The max trick : exp(xi−b)/(∑exp(xj−b)), where b=max(Xi). With this choice, overflow due to exp is impossible−
-        #the largest number exponentiated after shifting is 0.
-        b = x.max()
+        # The max trick : exp(xi−b)/(∑exp(xj−b)), where b=max(Xi). With this choice, overflow due to exp is impossible.
+        # The largest number exponentiated after shifting is 0.
+        # x size-(SXC), output size-(SXC)
+        b = x.max(axis=1, keepdims=True)  # maximum value per row
         y = np.exp(x - b)
-        out = y / y.sum()
-        #intermediate parameters
+        out = y / y.sum(axis=1, keepdims=True)  # normalize each row
+        # Intermediate parameters
         self.input = x
-        #self.output = out
+        self.output = out
         return out
 
     def backward(self, dout):
         """
         Backward pass.
         Args:
-          dout: gradients of the previous modul
+          dout: gradients of the previous module
         Returns:
           dx: gradients with respect to the input of the module
 
         TODO:
         Implement backward pass of the module.
         """
-
-        #######################
-        # PUT YOUR CODE HERE  #
-        #######################
-        # waiting for Bar theoretic part.
-        #######################
-        # END OF YOUR CODE    #
-        #######################
-
+        dx = dout * self.output * (1 - self.output)
         return dx
 
     def clear_cache(self):
@@ -212,6 +209,7 @@ class SoftMaxModule(object):
         Set any caches you have to None.
         """
         self.input = None
+        self.output = None
 
 
 class CrossEntropyModule(object):
