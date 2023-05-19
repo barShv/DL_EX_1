@@ -77,7 +77,7 @@ class MLP(nn.Module):
         Implement forward pass of the network.
         """
         out = self.linear1(x)
-        if hasattr(self, 'batch_norm'):
+        if hasattr(self, 'batch_norm'):   # insure !!!!
             out = self.batch_norm(out)
         out = self.act_fn(out)
         out = self.linear2(out)
