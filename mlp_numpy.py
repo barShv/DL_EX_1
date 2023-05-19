@@ -12,6 +12,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import inspect
+
 from modules import *
 
 
@@ -61,7 +63,7 @@ class MLP(object):
         out = self.linear1.forward(x)
         out = self.relu_fn.forward(out)
         out = self.linear2.forward(out)
-        out = self.soft.forward(out)
+        out = self.soft_max.forward(out)
         return out
 
     def backward(self, dout):
@@ -74,7 +76,7 @@ class MLP(object):
         TODO:
         Implement backward pass of the network.
         """
-        dout = self.soft.backward(dout)
+        dout = self.soft_max.backward(dout)
         dout = self.linear2.backward(dout)
         dout = self.relu_fn.backward(dout)
         dout = self.linear1.backward(dout)
@@ -88,7 +90,16 @@ class MLP(object):
         TODO:
         Iterate over modules and call the 'clear_cache' function.
         """
-        for attribute_name in dir(self):   # iterate over the modules of the network
+        visited_modules = set()
+        for attribute_name in dir(self):
             attribute = getattr(self, attribute_name)
-            if callable(getattr(attribute, 'clear_cache', None)):
-                attribute.clear_cache()
+            if isinstance(attribute, MLP) and callable(getattr(attribute, 'clear_cache', None)):
+                if attribute in visited_modules:
+                    continue
+                visited_modules.add(attribute)
+                attribute.clear_cache(self)
+
+        # self.linear1.clear_cache()
+        # self.linear2.clear_cache()
+        # self.relu_fn.clear_cache()
+        # self.soft_max.clear_cache()

@@ -43,12 +43,12 @@ class LinearModule(object):
             ####### (I am not sure if we should also make sure that the means are zero at first.. ). This would be how it's done:
             self.weight = np.random.normal(loc=0.0, scale=std, size=(out_features, in_features))
             # self.weight is (128,3072)
-            print(self.weight.shape)
+            #print(self.weight.shape)
 
         self.bias = np.zeros(out_features) #this is 1XN
         self.grads = {'weight': np.zeros_like(self.weight), #Initialize two gradients, one for Weights and one for Biases (gradients are same dimensions)
               'bias': np.zeros_like(self.bias)}
-        print(self.bias.shape)
+        #print(self.bias.shape)
 
     def forward(self, x):
         """
@@ -65,9 +65,6 @@ class LinearModule(object):
         Hint: You can store intermediate variables inside the object. They can be used in backward pass computation.
         """
         # The basic linear transformation Y = XW(T) + B
-        print(type(x))
-        print(x.shape)
-        x = x.view(x.size(0), -1)  # reshape x from [128, 3, 32, 32] to [128, 3072]
         out = np.dot(x, self.weight.T) + self.bias
 
         # Store intermediate variables for backward pass, X is the input of the previous layer
@@ -93,6 +90,7 @@ class LinearModule(object):
         self.grads['bias'] = np.sum(dout, axis=0) # dout*I, where I is a column of 1's.
 
         # Compute the gradients with respect to the input of the module
+        print(f"dout size {dout.shape}")
         dx = np.dot(dout, self.weight.T) #∂L/∂x =(∂L/∂Y))· W^⊤
         return dx
 
@@ -229,6 +227,8 @@ class CrossEntropyModule(object):
         TODO:
         Implement forward pass of the module.
         """
+        print(f"probabilities{x.shape}")
+        print(f"data_labels{y.shape}")
         out = -np.mean(np.sum(y * np.log(x), axis=1)) # axis 1 -> by rows
         return out
 
@@ -248,8 +248,6 @@ class CrossEntropyModule(object):
         # Compute the gradient (T in theory is y here, Y is SXC (1 HOT-encoder), X is SXC, that why the element wise division works.)
         dx = -(1/s)*(y / x)
         return dx
-
-
 
 
 #For checking

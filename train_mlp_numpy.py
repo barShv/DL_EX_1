@@ -51,6 +51,22 @@ def evaluate_model(model, data_loader, num_classes=10):
     return accuracy
 
 
+def convert_to_one_hot(y, num_classes):
+    """
+    Converts target labels to one-hot encoding.
+
+    Args:
+      y: target labels (shape: batch_size,)
+      num_classes: number of classes
+
+    Returns:
+      one_hot: one-hot encoded labels (shape: batch_size X num_classes (SxC))
+    """
+    batch_size = len(y)
+    one_hot = np.zeros((batch_size, num_classes))
+    one_hot[np.arange(batch_size), y] = 1
+    return one_hot
+
 
 def train(hidden_dims, lr, batch_size, epochs, seed, data_dir):
     """
@@ -104,12 +120,13 @@ def train(hidden_dims, lr, batch_size, epochs, seed, data_dir):
     for epoch in tqdm(range(epochs)):
         epoch_loss = 0.0
         for data_inputs, data_labels in cifar10_loader["train"]:  # data_labels in size [128] (as batch size)
-            #batch_size = data_inputs.size(0)
-            #data_inputs = data_inputs.view(batch_size, -1)  # reshape from [128, 3, 32, 32] to [128, 3072]
+            data_inputs = data_inputs.reshape(data_inputs.shape[0], -1)  # reshape from [128, 3, 32, 32] to [128, 3072]
             probabilities = model.forward(data_inputs)  # the output after the soft max, in size [128,10] (128- batch size, 10- num of classes)
-            loss = loss_module(probabilities, data_labels.long())
+            labels_one_hot = convert_to_one_hot(data_labels, 10)
+            loss = loss_module.forward(probabilities, labels_one_hot)
             model.clear_cache()
-            model.backward()  # what to put inside????
+            dout = loss_module.backward(probabilities, labels_one_hot)
+            model.backward(dout)  # ask ofir!!!
             # Update the parameters ???????
             epoch_loss += loss.item()
         loss_values.append(epoch_loss)
