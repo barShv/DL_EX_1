@@ -58,7 +58,7 @@ def evaluate_model(model, data_loader, num_classes=10):
     return accuracy
 
 
-def plots(loss_values):
+def plots(loss_values):  # not working- fix!!
     # Training Loss Curve
     plt.plot(loss_values)
     plt.xlabel('Epoch')
