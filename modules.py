@@ -35,8 +35,7 @@ class LinearModule(object):
         if input_layer:
             # meaning this is the first layer after the input and we just randomly initialize weights
 
-           ## this is alreadt the T matrix? is yes we need to change the row/column !!?????
-            self.weight = np.random.randn(in_features, out_features) #this is N x M
+            self.weight = np.random.randn(out_features, in_features) # this is N x M
         else:
             # in hidden layers, we need to use Kaiming Initilization which divides all WEIGHTS by an stdv factor, assuming W~N(o,2/in_features)
             std = np.sqrt(2 / in_features)  # Kaiming initialization standard deviation (this is good for ReLu activation)
@@ -45,7 +44,7 @@ class LinearModule(object):
             self.weight = np.random.normal(loc=0.0, scale=std, size=(in_features, out_features))
 
 
-        self.bias = np.zeros(out_features) #this is 1XM
+        self.bias = np.zeros(out_features) #this is 1XN
         self.grads = {'weight': np.zeros_like(self.weight), #Initialize two gradients, one for Weights and one for Biases (gradients are same dimensions)
               'bias': np.zeros_like(self.bias)}
 
@@ -64,8 +63,8 @@ class LinearModule(object):
 
         Hint: You can store intermediate variables inside the object. They can be used in backward pass computation.
         """
-        # The basic linear transformation Y = XW + B
-        out = np.dot(x, self.weight) + self.bias
+        # The basic linear transformation Y = XW(T) + B
+        out = np.dot(x, self.weight.T) + self.bias
 
         # Store intermediate variables for backward pass, X is the input of the previous layer
         self.input = x
@@ -247,15 +246,9 @@ class CrossEntropyModule(object):
         TODO:
         Implement backward pass of the module.
         """
-
-        #######################
-        # PUT YOUR CODE HERE  #
-        #######################
-
-        #######################
-        # END OF YOUR CODE    #
-        #######################
-
+        s = x.shape[0]  # Get the batch size
+        # Compute the gradient (T in theory is y here, Y is SXC (1 HOT-encoder), X is SXC, that why the element wise division works.)
+        dx = -(1/s)*(y / x)
         return dx
 
 
