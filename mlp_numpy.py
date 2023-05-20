@@ -80,6 +80,7 @@ class MLP(object):
         dout = self.linear2.backward(dout)
         dout = self.relu_fn.backward(dout)
         dout = self.linear1.backward(dout)
+
         return dout
 
     def clear_cache(self):

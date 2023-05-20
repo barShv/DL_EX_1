@@ -35,7 +35,7 @@ class LinearModule(object):
         if input_layer:
             # meaning this is the first layer after the input and we just randomly initialize weights
 
-            self.weight = np.random.randn(out_features, in_features) # this is N x M
+            self.weight = np.random.randn(out_features, in_features) # this is N x M, this will be transposed
         else:
             # in hidden layers, we need to use Kaiming Initilization which divides all WEIGHTS by an stdv factor, assuming W~N(o,2/in_features)
             std = np.sqrt(2 / in_features)  # Kaiming initialization standard deviation (this is good for ReLu activation)
@@ -45,7 +45,7 @@ class LinearModule(object):
             # self.weight is (128,3072)
             #print(self.weight.shape)
 
-        self.bias = np.zeros(out_features) #this is 1XN
+        self.bias = np.zeros(out_features) #this is 1XN, we will change it to matrix once we know X
         self.grads = {'weight': np.zeros_like(self.weight), #Initialize two gradients, one for Weights and one for Biases (gradients are same dimensions)
               'bias': np.zeros_like(self.bias)}
         #print(self.bias.shape)
@@ -65,8 +65,12 @@ class LinearModule(object):
         Hint: You can store intermediate variables inside the object. They can be used in backward pass computation.
         """
         # The basic linear transformation Y = XW(T) + B
-        out = np.dot(x, self.weight.T) + self.bias
+        # print('x:',x.shape)
+        # print('W^*t',self.weight.T.shape)
 
+        out = np.dot(x, self.weight.T) + self.bias
+        # print('out:',out.shape)
+        # print('forward works')
         # Store intermediate variables for backward pass, X is the input of the previous layer
         self.input = x
         return out
@@ -86,13 +90,15 @@ class LinearModule(object):
         """
 
         # Compute the gradients with respect to the weights and biases
-        self.grads['weight'] = np.dot(self.input.T, dout) # x^T*dout, The closed form expression for is: ∂L/∂W =( ∂L/∂Y))· X (or flip matrixes order with T)
-        self.grads['bias'] = np.sum(dout, axis=0) # dout*I, where I is a column of 1's.
+        # print('dout shape:', dout.shape)
+        # print('X:', self.input.shape)
+
+        self.grads['weight'] = np.dot(self.input.T, dout)# x^T*dout, The closed form expression for is: ∂L/∂W =( ∂L/∂Y))· X (or flip matrixes order with T)
+        self.grads['bias'] = np.sum(dout, axis=0) # dout*1, where 1 is a column of 1's.
 
         # Compute the gradients with respect to the input of the module
-        print('dout shape:', dout.shape)
-        print('self.weight.T shape:', self.weight.T.shape)
-        dx = np.dot(dout, self.weight.T) #∂L/∂x =(∂L/∂Y))· W^⊤
+
+        dx = np.dot(dout, self.weight)#.reshape(self.input.shape) #∂L/∂x =(∂L/∂Y))· W
         return dx
 
     def clear_cache(self):
@@ -228,8 +234,11 @@ class CrossEntropyModule(object):
         TODO:
         Implement forward pass of the module.
         """
-        print(f"probabilities{x.shape}")
-        print(f"data_labels{y.shape}")
+        # print(f"probabilities{x.shape}")
+        # print(f"data_labels{y.shape}")
+        epsilon = 1e-8  # Small epsilon value to prevent division by zero
+        x = np.clip(x, epsilon, 1 - epsilon)  # Clip values to be within (epsilon, 1-epsilon)
+
         out = -np.mean(np.sum(y * np.log(x), axis=1)) # axis 1 -> by rows
         return out
 
@@ -245,6 +254,8 @@ class CrossEntropyModule(object):
         TODO:
         Implement backward pass of the module.
         """
+        epsilon = 1e-8  # Small epsilon value to prevent division by zero
+        x = np.clip(x, epsilon, 1 - epsilon)
         s = x.shape[0]  # Get the batch size
         # Compute the gradient (T in theory is y here, Y is SXC (1 HOT-encoder), X is SXC, that why the element wise division works.)
         dx = -(1/s)*(y / x)
