@@ -12,12 +12,14 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import inspect
+
 import numpy as np
 import os
 from tqdm.auto import tqdm
 from copy import deepcopy
 from mlp_numpy import MLP
-from modules import CrossEntropyModule
+from modules import CrossEntropyModule, LinearModule
 import cifar10_utils
 from torch.utils.tensorboard import SummaryWriter
 import torch
@@ -39,12 +41,15 @@ def evaluate_model(model, data_loader, num_classes=10):
           independent of batch sizes (not all batches might be the same size).
     """
     correct, total_samples = 0.,0.
-
+    #print('this is where the problem?')
     for data_inputs, data_labels in data_loader:
+        data_inputs = data_inputs.reshape(data_inputs.shape[0], -1)  # reshape from [128, 3, 32, 32] to [128, 3072]
         probabilities = model.forward(data_inputs)
         predicted_labels = np.argmax(probabilities, axis=1)
-        total_samples += data_labels.size(0)
+        total_samples += data_labels.shape[0]
+        #print(data_labels.shape[0])
         correct += np.sum(predicted_labels == data_labels)
+        #print(correct)
 
     accuracy = correct / total_samples
     return accuracy
@@ -105,6 +110,8 @@ def train(hidden_dims, lr, batch_size, epochs, seed, data_dir):
     logging_dir = 'runs/our_experiment'
 
     # Create TensorBoard logger
+    logging_dir = 'runs/numpy_logs'
+    os.makedirs(logging_dir, exist_ok=True)
     writer = SummaryWriter(logging_dir)
     model_plotted = False
 
@@ -130,9 +137,19 @@ def train(hidden_dims, lr, batch_size, epochs, seed, data_dir):
             loss = loss_module.forward(probabilities, labels_one_hot)
             model.clear_cache()
             dout = loss_module.backward(probabilities, labels_one_hot)
-            model.backward(dout)  # ask ofir!!!
-            # Update the parameters ???????
+            model.backward(dout)
+            # Update the parameters (weights and biases) using SGD
+            for module in inspect.getmembers(model): #SGD
+                #print(module[1])
+                if isinstance(module[1], LinearModule): # SGD - update the gradients using lr, for learning
+                    # print('i am inside the loop')
+                    module[1].weight -= lr * module[1].grads["weight"].T
+                    module[1].bias -= lr * module[1].grads["bias"]
+
+
             epoch_loss += loss.item()
+        writer.add_scalar('Loss', epoch_loss, global_step=epoch + 1)
+
         loss_values.append(epoch_loss)
         val_accuracy = evaluate_model(model, cifar10_loader["validation"], num_classes=10)
         val_accuracies.append(val_accuracy)
@@ -160,8 +177,8 @@ def train(hidden_dims, lr, batch_size, epochs, seed, data_dir):
     #                       fig,
     #                       global_step=epoch + 1)
 
-
     writer.close()
+    logging_info = logging_dir
 
     return model, val_accuracies, test_accuracy, logging_info
 
@@ -196,9 +213,3 @@ if __name__ == '__main__':
 
 #-------------------------------------------------testing area
 
-y = np.array([0, 2, 1, 3])  # Example target labels
-num_classes = 4  # Number of classes
-
-one_hot = convert_to_one_hot(y, num_classes)
-print(one_hot)
-print(y)
