@@ -99,7 +99,3 @@ class MLP(object):
                 visited_modules.add(attribute)
                 attribute.clear_cache(self)
 
-        # self.linear1.clear_cache()
-        # self.linear2.clear_cache()
-        # self.relu_fn.clear_cache()
-        # self.soft_max.clear_cache()
