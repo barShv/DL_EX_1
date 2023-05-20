@@ -90,7 +90,8 @@ class LinearModule(object):
         self.grads['bias'] = np.sum(dout, axis=0) # dout*I, where I is a column of 1's.
 
         # Compute the gradients with respect to the input of the module
-        print(f"dout size {dout.shape}")
+        print('dout shape:', dout.shape)
+        print('self.weight.T shape:', self.weight.T.shape)
         dx = np.dot(dout, self.weight.T) #∂L/∂x =(∂L/∂Y))· W^⊤
         return dx
 

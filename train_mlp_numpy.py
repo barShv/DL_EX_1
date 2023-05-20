@@ -19,9 +19,8 @@ from copy import deepcopy
 from mlp_numpy import MLP
 from modules import CrossEntropyModule
 import cifar10_utils
-
+from torch.utils.tensorboard import SummaryWriter
 import torch
-
 
 def evaluate_model(model, data_loader, num_classes=10):
     """
@@ -103,6 +102,11 @@ def train(hidden_dims, lr, batch_size, epochs, seed, data_dir):
     # Set the random seeds for reproducibility
     np.random.seed(seed)
     torch.manual_seed(seed)
+    logging_dir = 'runs/our_experiment'
+
+    # Create TensorBoard logger
+    writer = SummaryWriter(logging_dir)
+    model_plotted = False
 
     ## Loading the dataset
     cifar10 = cifar10_utils.get_cifar10(data_dir)
@@ -142,6 +146,23 @@ def train(hidden_dims, lr, batch_size, epochs, seed, data_dir):
     print(f"The accuracy of the test set with the best model: {100.0 * test_accuracy:.2f}%")
     # TODO: Add any information you might want to save for plotting
     logging_info = None  # Placeholder for any additional logging information you might want to save
+    # Add average loss to TensorBoard
+    epoch_loss /= len(data_dir)
+    writer.add_scalar('training_loss',
+                      epoch_loss,
+                      global_step=epoch + 1)
+
+    # # Visualize prediction and add figure to TensorBoard
+    # # Since matplotlib figures can be slow in rendering, we only do it every 10th epoch
+    # if (epoch + 1) % 10 == 0:
+    #     fig = visualize_classification(model, val_dataset.data, val_dataset.label)
+    #     writer.add_figure('predictions',
+    #                       fig,
+    #                       global_step=epoch + 1)
+
+
+    writer.close()
+
     return model, val_accuracies, test_accuracy, logging_info
 
 
@@ -172,4 +193,12 @@ if __name__ == '__main__':
 
     train(**kwargs)
     # Feel free to add any additional functions, such as plotting of the loss curve here
-    
+
+#-------------------------------------------------testing area
+
+y = np.array([0, 2, 1, 3])  # Example target labels
+num_classes = 4  # Number of classes
+
+one_hot = convert_to_one_hot(y, num_classes)
+print(one_hot)
+print(y)
